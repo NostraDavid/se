@@ -481,7 +481,8 @@ class TestParseBase64CharMethod:
     """Tests for parse_base_64_char method (base64 character parsing)"""
 
     @pytest.mark.parametrize(
-        "char", list("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
+        "char",
+        list("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"),
     )
     def test_parse_base_64_char_success(self, char):
         """Test parsing valid base64 character successfully"""
@@ -716,7 +717,7 @@ class TestParseBase64Method:
         with pytest.raises(ValueError) as excinfo:
             parser.parse_base_64()
         assert "Missing opening '|'" in str(
-            excinfo.value
+            excinfo.value,
         ) or "Missing closing '|'" in str(excinfo.value)
         assert parser.index == 0
 
@@ -749,8 +750,6 @@ class TestParseHexadecimalsMethod:
             ("abc123", "abc123"),
             ("ABCDEF", "ABCDEF"),
             ("0123456789abcdef", "0123456789abcdef"),
-            ("", ""),
-            ("g123", ""),  # 'g' is not a hex digit
             ("a1b2c3xyz", "a1b2c3"),
         ],
     )
@@ -762,8 +761,9 @@ class TestParseHexadecimalsMethod:
 
     def test_parse_hexadecimals_empty(self):
         parser = SexpParser("")
-        result = parser.parse_hexadecimals()
-        assert result == ""
+        with pytest.raises(ValueError) as excinfo:
+            parser.parse_hexadecimals()
+        assert "Expected HEXDIG at position" in str(excinfo.value)
         assert parser.at_end()
 
     def test_parse_hexadecimals_partial(self):
@@ -780,13 +780,13 @@ class TestParseHexadecimalMethod:
     @pytest.mark.parametrize(
         "input_str, expected",
         [
-            ("1a", 0x1A),
-            ("0", 0),
-            ("deadBEEF", 0xDEADBEEF),
-            ("ABC", 0xABC),
-            ("", None),
-            ("g123", None),
-            ("123xyz", 0x123),
+            ("#1a#", 0x1A),
+            ("#0#", 0x0),
+            ("#deadBEEF#", 0xDEADBEEF),
+            ("#ABC#", 0xABC),
+            ("##", None),
+            ("#g123#", None),
+            ("#123xyz#", 0x123),
         ],
     )
     def test_parse_hexadecimal_various(self, input_str, expected):
@@ -795,13 +795,13 @@ class TestParseHexadecimalMethod:
         assert result == expected
         if expected is not None:
             # Should consume only the hex digits
-            hex_part = ""
+            hex_count = 0
             for c in input_str:
                 if c.lower() in "0123456789abcdef":
-                    hex_part += c
+                    hex_count += 1
                 else:
                     break
-            assert parser.index == len(hex_part)
+            assert parser.index == hex_count
         else:
             assert parser.index == 0
 

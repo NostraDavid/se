@@ -43,6 +43,8 @@ addopts = [
     # "--stepwise",
     "--durations=4",
     "--verbosity=4",
+    "--no-header",
+    "--show-capture=all",
     "-ra",
     "--tb=line",
 ]

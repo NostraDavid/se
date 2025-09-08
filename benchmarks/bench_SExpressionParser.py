@@ -21,7 +21,7 @@ class SExpressionParserSuite:
         """
         if not DATA_DIR.is_dir():
             raise FileNotFoundError(
-                f"Data directory not found. Expected at: {DATA_DIR}"
+                f"Data directory not found. Expected at: {DATA_DIR}",
             )
 
         data_files = sorted(list(DATA_DIR.glob("*.lisp")))

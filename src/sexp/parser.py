@@ -178,7 +178,7 @@ class SexpParser:
                 break
         if (count + group_count) % 4 != 0:
             raise ValueError(
-                f"Invalid base64 character count: {count} (must be multiple of 4)"
+                f"Invalid base64 character count: {count} (must be multiple of 4)",
             )
         return count + group_count
 
@@ -304,7 +304,7 @@ class SexpParser:
             else:
                 # Invalid character in base64
                 raise ValueError(
-                    f"Invalid base64 character '{char}' at position {self.index}"
+                    f"Invalid base64 character '{char}' at position {self.index}",
                 )
 
         # Closing delimiter
@@ -329,21 +329,74 @@ class SexpParser:
     def parse_hexadecimals(self) -> str:
         """
         Parse a sequence of hexadecimal digits and return as a string.
-        Returns empty string if no hex digits found.
-        """
-        start = self.index
-        while self.parse_hexdigit():
-            pass
-        return self.text[start : self.index]
+        Requires at least two HEXDIG, each possibly followed by whitespace.
 
-    def parse_hexadecimal(self) -> Optional[int]:
+        Implements: hexadecimals = 2(HEXDIG *whitespace)
         """
-        Parse a sequence of hexadecimal digits and return as int.
-        Returns None if no hex digits found.
-        """
-        start = self.index
+        hex_digits = []
+        for _ in range(2):
+            if not self.parse_hexdigit():
+                raise ValueError(f"Expected HEXDIG at position {self.index}")
+            hex_digits.append(self.text[self.index - 1])
+            while self.parse_whitespace():
+                pass
+        # Parse additional HEXDIG *whitespace
         while self.parse_hexdigit():
+            hex_digits.append(self.text[self.index - 1])
+            while self.parse_whitespace():
+                pass
+        return "".join(hex_digits)
+
+    def parse_hexadecimal(self) -> Optional[bytes]:
+        """
+        Parse a hexadecimal-encoded string (between '#' delimiters).
+        Returns the decoded bytes, or None if not found.
+
+        Implements: hexadecimal = [decimal] "#" *whitespace *hexadecimals "#"
+        """
+        start_index = self.index
+        # Optional decimal length (ignored for now)
+        self.parse_decimal()
+
+        # Opening delimiter
+        if self.peek() != "#":
+            return None
+        self.consume()
+
+        # Skip any whitespace
+        while self.parse_whitespace():
             pass
-        if self.index > start:
-            return int(self.text[start : self.index], 16)
-        return None
+
+        # Parse hexadecimals (may be empty, e.g. ## is valid)
+        hex_digits = []
+        while True:
+            char = self.peek()
+            if char is None or char == "#":
+                break
+            if char.isspace():
+                self.consume()
+                continue
+            if char.lower() in "0123456789abcdef":
+                hex_digits.append(char)
+                self.consume()
+            else:
+                raise ValueError(
+                    f"Invalid hex character '{char}' at position {self.index}",
+                )
+
+        # Closing delimiter
+        if self.peek() != "#":
+            raise ValueError(
+                f"Missing closing '#' for hexadecimal at position {self.index}",
+            )
+        self.consume()
+
+        hex_str = "".join(hex_digits)
+        if not hex_str:
+            return b""
+        try:
+            return bytes.fromhex(hex_str)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid hexadecimal encoding at position {start_index}: {e}",
+            )

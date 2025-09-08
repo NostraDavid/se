@@ -137,7 +137,7 @@ class SExpressionGenerator:
             else:
                 # Non-zero number: first digit 1-9, then 0-9 digits
                 first = draw(
-                    st.characters(min_codepoint=ord("1"), max_codepoint=ord("9"))
+                    st.characters(min_codepoint=ord("1"), max_codepoint=ord("9")),
                 )
                 rest = draw(st.lists(self.digit, max_size=10))
                 return first + "".join(rest)
@@ -225,8 +225,9 @@ class SExpressionGenerator:
             # Rest of the characters: alpha, digit, or simple punctuation
             rest = draw(
                 st.lists(
-                    st.one_of(self.alpha, self.digit, self.simple_punc), max_size=20
-                )
+                    st.one_of(self.alpha, self.digit, self.simple_punc),
+                    max_size=20,
+                ),
             )
 
             return first + "".join(rest)
@@ -246,7 +247,8 @@ class SExpressionGenerator:
         @st.composite
         def _escaped(draw):
             zero_to_seven = st.characters(
-                min_codepoint=ord("0"), max_codepoint=ord("7")
+                min_codepoint=ord("0"),
+                max_codepoint=ord("7"),
             )
             bs = draw(self.backslash)
 
@@ -317,7 +319,7 @@ class SExpressionGenerator:
 
             # Content: mix of printable and escaped characters
             content = draw(
-                st.lists(st.one_of(self.printable, self.escaped), max_size=50)
+                st.lists(st.one_of(self.printable, self.escaped), max_size=50),
             )
 
             return dec + '"' + "".join(content) + '"'
@@ -332,7 +334,7 @@ class SExpressionGenerator:
                 st.text(
                     alphabet=st.characters(min_codepoint=0x00, max_codepoint=0x7F),
                     max_size=99,
-                )
+                ),
             )
             length = len(content.encode("utf-8"))
             return f"{length}:{content}"
